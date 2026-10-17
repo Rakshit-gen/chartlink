@@ -120,9 +120,27 @@ func Link(recs []record.Record, cfg Config) Result {
 	for _, p := range pairs {
 		res.Review = place(ch, sc, p, &cfg, res.Review)
 	}
-	// A pair queued for review whose records were merged later through
-	// other pairs is settled; drop it.
-	res.Review = slices.DeleteFunc(res.Review, func(p Pair) bool { return ch.find(p.A) == ch.find(p.B) })
+	res.Review = settle(ch, res.Review)
 	res.Chart = ch.labels()
 	return res
+}
+
+// settle drops review pairs whose records ended up in one chart anyway, and
+// keeps one pair per two charts, the strongest: a reviewer decides about
+// charts, not about every pair of records in them.
+func settle(ch *charts, review []Pair) []Pair {
+	seen := map[[2]int]bool{}
+	out := review[:0]
+	for _, p := range review { // already strongest first
+		a, b := ch.find(p.A), ch.find(p.B)
+		if a == b {
+			continue
+		}
+		k := [2]int{min(a, b), max(a, b)}
+		if !seen[k] {
+			seen[k] = true
+			out = append(out, p)
+		}
+	}
+	return out
 }
