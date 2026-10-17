@@ -99,6 +99,8 @@ func render(r *rand.Rand, p *Person, s *Source) record.Record {
 	}
 	if r.Float64() < s.NoSSN {
 		rec.SSN4 = ""
+	} else if r.Float64() < s.Typo {
+		rec.SSN4 = digitTypo(r, rec.SSN4)
 	}
 	if r.Float64() < s.NoPhone {
 		rec.Phone = ""
@@ -204,4 +206,16 @@ func wrongDate(r *rand.Rand, d record.Date) record.Date {
 		d.Y = 2026
 	}
 	return d
+}
+
+// digitTypo changes one digit or swaps two neighbours.
+func digitTypo(r *rand.Rand, s string) string {
+	b := []byte(s)
+	i := r.IntN(len(b) - 1)
+	if r.IntN(2) == 0 && b[i] != b[i+1] {
+		b[i], b[i+1] = b[i+1], b[i]
+	} else {
+		b[i] = '0' + (b[i]-'0'+1+byte(r.IntN(9)))%10
+	}
+	return string(b)
 }

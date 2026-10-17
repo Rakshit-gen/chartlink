@@ -62,3 +62,22 @@ func TestWrongDateStaysADate(t *testing.T) {
 		}
 	}
 }
+
+func TestDigitTypo(t *testing.T) {
+	r := rand.New(rand.NewPCG(3, 3))
+	for range 1000 {
+		got := digitTypo(r, "1234")
+		diff := 0
+		for i := range 4 {
+			if got[i] != "1234"[i] {
+				diff++
+			}
+			if got[i] < '0' || got[i] > '9' {
+				t.Fatalf("made %q", got)
+			}
+		}
+		if diff < 1 || diff > 2 {
+			t.Fatalf("made %q", got)
+		}
+	}
+}
