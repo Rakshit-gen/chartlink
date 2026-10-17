@@ -111,11 +111,11 @@ func (s *scorer) weight(a, b int, g Gamma) float64 {
 	return w
 }
 
-// twins: same date of birth and first names that are not one keystroke
-// apart, even through nicknames. RYAN and RYSN is a typo; RICHARD and ROCH
-// is a typo of RICH; MARK and LUKE are twins.
+// twins: the same date of birth, or one a typo away, and first names that
+// are not one keystroke apart, even through nicknames. RYAN and RYSN is a
+// typo; RICHARD and ROCH is a typo of RICH; MARK and LUKE are twins.
 func twins(a, b *prepped, g Gamma) bool {
-	if g[DOB] != 0 || g[First] != 3 {
+	if g[DOB] == Missing || g[DOB] > 2 || g[First] != 3 {
 		return false
 	}
 	for _, x := range record.Variants(a.first) {
