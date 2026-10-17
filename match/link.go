@@ -1,6 +1,7 @@
 package match
 
 import (
+	"cmp"
 	"math/rand/v2"
 	"slices"
 
@@ -69,15 +70,7 @@ func Link(recs []record.Record, cfg Config) Result {
 		pairs[i] = Pair{A: a, B: b, Weight: w, Prob: m.Prob(w)}
 	}
 	// Strongest evidence first, so a chart forms around its surest pairs.
-	slices.SortFunc(pairs, func(x, y Pair) int {
-		switch {
-		case x.Weight > y.Weight:
-			return -1
-		case x.Weight < y.Weight:
-			return 1
-		}
-		return 0
-	})
+	slices.SortFunc(pairs, func(x, y Pair) int { return cmp.Compare(y.Weight, x.Weight) })
 
 	ch := newCharts(len(ps))
 	res := Result{Model: m, Candidates: len(cands)}
@@ -90,6 +83,8 @@ func Link(recs []record.Record, cfg Config) Result {
 		case p.Prob >= cfg.Merge && !(sc.on(Guard) && ch.clash(ra, rb, sc.conflict)):
 			ch.union(ra, rb)
 		case p.Prob >= cfg.Review:
+			// Includes strong pairs the guard stopped: a person should
+			// see why two charts that look alike can't be merged.
 			res.Review = append(res.Review, p)
 		}
 	}
