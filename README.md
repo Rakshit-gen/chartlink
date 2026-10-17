@@ -76,6 +76,30 @@ Weighing names by rarity is a trade, not a pure win: it finds more people and le
 
 At a million records more blocks pass the 200-record cap and are skipped, so duplicates rise.
 
+## Measured vs claimed
+
+| claim | number | where it comes from |
+|---|---|---|
+| overlays per 1000 people, chartlink vs Fellegi-Sunter | 0.22 vs 29.27 | `chartlink quality`, results/quality.md |
+| pairwise recall | 96.6% | same |
+| twin pairs merged, chartlink vs Fellegi-Sunter | 1.5% vs 65.6% | same |
+| duplicates per 1000 after review, chartlink vs Fellegi-Sunter | 7.1 vs 7.9 | same |
+| overlays without counting the household once | 7.39 per 1000 | `chartlink ablate`, results/ablation.md |
+| true pairs blocking finds | 99.13% | `chartlink blocking`, results/blocking.md |
+| linking one record into a million-record index | 24.5 µs median | `chartlink bench`, results/bench.md |
+| batch linking 43,000 records | 0.78 s | `BenchmarkLink` in match/ |
+
+Every number is on synthetic data. None comes from a real hospital's records.
+
+## Limitations
+
+- **The data is mine.** The error rates and household shapes are my guesses at what registration desks and families look like. On real records, fit the model on them and check a hand-labelled sample before trusting any of these numbers.
+- **The reviewer is perfect.** A real one is slower and sometimes wrong.
+- **Twins with near-identical names merge.** ANA and ANNA are within two edits, so they look like a typo.
+- **Charts are never split.** A wrong merge stays until someone undoes it by hand.
+- **Big populations need finer blocking keys.** Blocks over 200 records are skipped, which is why duplicates rise at a million records.
+- **US-shaped records.** Soundex, the nickname table, five-digit zips and SSNs are all American.
+
 ## Usage
 
 Link a CSV of records into charts:
