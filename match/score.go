@@ -9,6 +9,10 @@ type Idea uint8
 const (
 	// TermFreq weighs agreement on a name by how rare that name is.
 	TermFreq Idea = 1 << iota
+	// Household counts agreement on street, zip and phone once. Everyone
+	// in a household shares them, so they are one piece of evidence, not
+	// three.
+	Household
 )
 
 // scorer weighs pairs with the fitted model and whichever ideas are on.
@@ -42,6 +46,20 @@ func (s *scorer) on(i Idea) bool { return s.off&i == 0 }
 // weight is the pair's evidence in bits: positive for the same person.
 func (s *scorer) weight(a, b int, g Gamma) float64 {
 	w := s.m.Weight(g)
+	if s.on(Household) {
+		// Take the household fields' positive weights back out and add
+		// only the largest. Disagreements still count in full.
+		best := 0.0
+		for _, f := range [3]Field{Street, Zip, Phone} {
+			if l := g[f]; l != Missing {
+				if x := math.Log2(s.m.M[f][l] / s.m.U[f][l]); x > 0 {
+					w -= x
+					best = max(best, x)
+				}
+			}
+		}
+		w += best
+	}
 	if s.on(TermFreq) {
 		// Exact agreement on a name is worth log2(M/f), where f is the
 		// share of records with that name, rather than log2(M/U) with U
