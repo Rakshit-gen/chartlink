@@ -12,8 +12,12 @@ import (
 // for a match than for a random pair.
 type Model struct {
 	M, U [Fields][]float64
-	// Prior is the chance that two random records are the same person.
-	Prior float64
+	// Prior is the chance that two random records are the same person,
+	// among the Records records the model was fitted on. Each record has
+	// about the same number of true partners whatever the size, so in a
+	// set of n records the chance is about Prior*Records/n (see PriorAt).
+	Prior   float64
+	Records int
 	// Names holds, for first and last names, the share of records with
 	// each name. A name not in the table is taken to be as rare as one
 	// record in the set the model was fitted on (NameFloor).
@@ -49,9 +53,18 @@ func (m *Model) Weight(g Gamma) float64 {
 }
 
 // Prob turns a weight into the chance the pair is the same person.
-func (m *Model) Prob(w float64) float64 {
-	odds := m.Prior / (1 - m.Prior) * math.Exp2(w)
+func (m *Model) Prob(w float64) float64 { return prob(m.Prior, w) }
+
+func prob(prior, w float64) float64 {
+	odds := prior / (1 - prior) * math.Exp2(w)
 	return odds / (1 + odds)
+}
+
+// PriorAt is the prior for a set of n records. It never goes above the
+// fitted prior: an index starting empty would otherwise merge its first
+// records on thin evidence, and those merges stay.
+func (m *Model) PriorAt(n int) float64 {
+	return m.Prior * float64(m.Records) / float64(max(n, m.Records))
 }
 
 // WeightFor is the weight that gives probability p.

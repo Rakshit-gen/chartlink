@@ -92,6 +92,7 @@ func fit(ps []prepped, cfg Config) (Model, []uint64, []Gamma) {
 	share := m.estimateM(gs, cfg.Iters)
 	n := float64(len(ps))
 	m.Prior = share * float64(len(cands)) / (n * (n - 1) / 2)
+	m.Records = len(ps)
 	m.countNames(ps)
 	return m, cands, gs
 }

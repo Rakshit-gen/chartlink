@@ -39,6 +39,9 @@ func (ix *Index) Add(r record.Record) (id int, review []Pair) {
 	ix.ch.add()
 	p := &ix.sc.ps[id]
 
+	// The index grows, so a random record in it is ever less likely to
+	// be this record's person.
+	prior := ix.sc.m.PriorAt(id)
 	clear(ix.seen)
 	ix.pairs = ix.pairs[:0]
 	keys := make([]string, len(passes))
@@ -58,7 +61,9 @@ func (ix *Index) Add(r record.Record) (id int, review []Pair) {
 				continue
 			}
 			ix.seen[o] = true
-			ix.pairs = append(ix.pairs, ix.sc.pair(o, id, compare(&ix.sc.ps[o], p)))
+			pr := ix.sc.pair(o, id, compare(&ix.sc.ps[o], p))
+			pr.Prob = prob(prior, pr.Weight)
+			ix.pairs = append(ix.pairs, pr)
 		}
 	}
 	for i, k := range keys {

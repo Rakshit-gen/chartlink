@@ -33,3 +33,13 @@ func TestWeightAndProb(t *testing.T) {
 		}
 	}
 }
+
+func TestPriorAt(t *testing.T) {
+	m := Model{Prior: 1e-4, Records: 50000}
+	if got := m.PriorAt(100000); math.Abs(got-5e-5) > 1e-12 {
+		t.Errorf("twice the records: prior %g", got)
+	}
+	if m.PriorAt(10) != m.Prior {
+		t.Error("a small index should use the fitted prior")
+	}
+}
