@@ -18,6 +18,8 @@ type Config struct {
 	// many rounds of EM fit M.
 	Samples, Iters int
 	Seed           uint64
+	// Without switches ideas off, for the ablation and the baseline.
+	Without Idea
 }
 
 // DefaultConfig is what the README's numbers come from.
@@ -59,10 +61,11 @@ func Link(recs []record.Record, cfg Config) Result {
 	n := float64(len(ps))
 	m.Prior = share * float64(len(cands)) / (n * (n - 1) / 2)
 
+	sc := newScorer(ps, &m, cfg.Without)
 	pairs := make([]Pair, len(cands))
 	for i, c := range cands {
 		a, b := unpack(c)
-		w := m.Weight(gs[i])
+		w := sc.weight(a, b, gs[i])
 		pairs[i] = Pair{A: a, B: b, Weight: w, Prob: m.Prob(w)}
 	}
 	// Strongest evidence first, so a chart forms around its surest pairs.
