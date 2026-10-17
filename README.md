@@ -27,6 +27,55 @@ Pairs that are likely but not certain, and pairs the guard stopped, go to a revi
 
 It runs as a batch over a whole set of records or as an index that links each record as it arrives.
 
+## Results
+
+Five synthetic populations of 20,000 people, about 43,000 records each, from five sources with their own error rates. Means over the five. Full tables are in [results/](results/quality.md).
+
+| matcher | overlays per 1000 people | duplicates per 1000 people | pairwise precision | pairwise recall | review queue |
+|---|---:|---:|---:|---:|---:|
+| exact first, last, DOB | 0.05 | 354.2 | 0.9999 | 0.6040 | 0 |
+| Fellegi-Sunter with EM | 29.27 | 28.3 | 0.9119 | 0.9766 | 957 |
+| **chartlink** | **0.22** | 34.7 | 0.9997 | 0.9660 | 1041 |
+
+chartlink leaves a few more charts split than Fellegi-Sunter (34.7 against 28.3 per 1000) in exchange for 130 times fewer overlays. A reviewer who is always right, working through each matcher's queue, brings chartlink to 7.1 duplicates per 1000 and Fellegi-Sunter to 7.9. The overlays don't change, since the reviewer only merges.
+
+The hard cases:
+
+| matcher | twin pairs merged | Jr/Sr pairs merged | married, split | moved, split |
+|---|---:|---:|---:|---:|
+| exact first, last, DOB | 0.0% | 0.0% | 43.3% | 28.4% |
+| Fellegi-Sunter with EM | 65.6% | 59.7% | 6.3% | 8.5% |
+| **chartlink** | **1.5%** | **0.2%** | 7.0% | 7.5% |
+
+People who go by their middle name are the cost of the guard: they look like twins, so 33% of them are split before review and 1.9% after.
+
+One threshold can flatter a matcher, so here is the whole range. Each point is a merge threshold from 0.5 to 0.99999. At every setting, chartlink makes fewer overlays at fewer or about the same duplicates.
+
+![Overlays against duplicates as the threshold moves](results/sweep.svg)
+
+**What each piece is worth** ([ablation](results/ablation.md)):
+
+| variant | overlays per 1000 | duplicates per 1000 | twin pairs merged |
+|---|---:|---:|---:|
+| chartlink | 0.22 | 34.7 | 1.5% |
+| household fields counted separately | 7.39 | 33.7 | 2.4% |
+| no chart guard | 7.43 | 25.8 | 42.7% |
+| names not weighted by rarity | 0.16 | 38.7 | 1.4% |
+
+Weighing names by rarity is a trade, not a pure win: it finds more people and lets a few more wrong ones through.
+
+**Blocking** finds 99.13% of true pairs with about 5.7 candidate pairs per record ([blocking](results/blocking.md)). Pairs it misses can never be linked.
+
+**Cost.** Batch linking of 43,000 records takes 0.78 s. Fed one record at a time into an index on one core of an Apple M4:
+
+| records in the stream | Add p50 | Add p99 | records per second | memory | overlays per 1000 | duplicates per 1000 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 43,176 | 6.1 µs | 26 µs | 127,000 | 25 MB | 0.50 | 31.1 |
+| 215,898 | 9.8 µs | 60 µs | 73,000 | 113 MB | 0.37 | 36.5 |
+| 1,079,349 | 24.5 µs | 178 µs | 26,000 | 533 MB | 0.49 | 46.3 |
+
+At a million records more blocks pass the 200-record cap and are skipped, so duplicates rise.
+
 ## Usage
 
 Link a CSV of records into charts:
