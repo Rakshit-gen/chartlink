@@ -44,7 +44,9 @@ func (s *scorer) on(i Idea) bool { return s.off&i == 0 }
 var household = [3]Field{Street, Zip, Phone}
 
 // weight is the pair's evidence in bits: positive for the same person.
-func (s *scorer) weight(a, b int, g Gamma) float64 {
+// raw is the same before the family rules, so a caller can tell when the
+// rules are what kept a pair apart.
+func (s *scorer) weight(a, b int, g Gamma) (w, raw float64) {
 	var c [Fields]float64
 	for f := range Fields {
 		if l := g[f]; l != Missing {
@@ -79,6 +81,9 @@ func (s *scorer) weight(a, b int, g Gamma) float64 {
 			}
 		}
 	}
+	for _, x := range c {
+		raw += x
+	}
 	if s.on(Family) {
 		var shared []Field
 		switch {
@@ -95,11 +100,10 @@ func (s *scorer) weight(a, b int, g Gamma) float64 {
 			c[f] = min(c[f], 0)
 		}
 	}
-	w := 0.0
 	for _, x := range c {
 		w += x
 	}
-	return w
+	return w, raw
 }
 
 // twins: the same date of birth, or one a typo away, and first names more

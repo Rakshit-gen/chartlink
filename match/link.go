@@ -33,6 +33,34 @@ type Pair struct {
 	A, B   int
 	Weight float64
 	Prob   float64
+	// Held means the pair would have merged but for the family rules: it
+	// looks like twins, or a father and son. Someone who goes by a middle
+	// name looks like a twin too, so these always go to review.
+	Held bool
+}
+
+func (sc *scorer) pair(a, b int, g Gamma, cfg *Config) Pair {
+	w, raw := sc.weight(a, b, g)
+	p := Pair{A: a, B: b, Weight: w, Prob: sc.m.Prob(w)}
+	p.Held = p.Prob < cfg.Merge && sc.m.Prob(raw) >= cfg.Merge
+	return p
+}
+
+// place merges or queues one pair, strongest pairs first.
+func place(ch *charts, sc *scorer, p Pair, cfg *Config, review []Pair) []Pair {
+	ra, rb := ch.find(p.A), ch.find(p.B)
+	if ra == rb {
+		return review
+	}
+	switch {
+	case p.Prob >= cfg.Merge && !(sc.on(Guard) && ch.clash(ra, rb, sc.conflict)):
+		ch.union(ra, rb)
+	case p.Prob >= cfg.Review || p.Held:
+		// Includes strong pairs the guard stopped: a person should see
+		// why two charts that look alike can't be merged.
+		review = append(review, p)
+	}
+	return review
 }
 
 // Result is the linker's output.
@@ -82,8 +110,7 @@ func Link(recs []record.Record, cfg Config) Result {
 	pairs := make([]Pair, len(cands))
 	for i, c := range cands {
 		a, b := unpack(c)
-		w := sc.weight(a, b, gs[i])
-		pairs[i] = Pair{A: a, B: b, Weight: w, Prob: m.Prob(w)}
+		pairs[i] = sc.pair(a, b, gs[i], &cfg)
 	}
 	// Strongest evidence first, so a chart forms around its surest pairs.
 	slices.SortFunc(pairs, func(x, y Pair) int { return cmp.Compare(y.Weight, x.Weight) })
@@ -91,18 +118,7 @@ func Link(recs []record.Record, cfg Config) Result {
 	ch := newCharts(len(ps))
 	res := Result{Model: m, Candidates: len(cands)}
 	for _, p := range pairs {
-		ra, rb := ch.find(p.A), ch.find(p.B)
-		if ra == rb {
-			continue
-		}
-		switch {
-		case p.Prob >= cfg.Merge && !(sc.on(Guard) && ch.clash(ra, rb, sc.conflict)):
-			ch.union(ra, rb)
-		case p.Prob >= cfg.Review:
-			// Includes strong pairs the guard stopped: a person should
-			// see why two charts that look alike can't be merged.
-			res.Review = append(res.Review, p)
-		}
+		res.Review = place(ch, sc, p, &cfg, res.Review)
 	}
 	// A pair queued for review whose records were merged later through
 	// other pairs is settled; drop it.

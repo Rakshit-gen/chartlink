@@ -58,8 +58,7 @@ func (ix *Index) Add(r record.Record) (id int, review []Pair) {
 				continue
 			}
 			ix.seen[o] = true
-			w := ix.sc.weight(o, id, compare(&ix.sc.ps[o], p))
-			ix.pairs = append(ix.pairs, Pair{A: o, B: id, Weight: w, Prob: ix.sc.m.Prob(w)})
+			ix.pairs = append(ix.pairs, ix.sc.pair(o, id, compare(&ix.sc.ps[o], p), &ix.cfg))
 		}
 	}
 	for i, k := range keys {
@@ -70,16 +69,7 @@ func (ix *Index) Add(r record.Record) (id int, review []Pair) {
 
 	slices.SortFunc(ix.pairs, func(x, y Pair) int { return cmp.Compare(y.Weight, x.Weight) })
 	for _, pr := range ix.pairs {
-		ra, rb := ix.ch.find(pr.A), ix.ch.find(pr.B)
-		if ra == rb {
-			continue
-		}
-		switch {
-		case pr.Prob >= ix.cfg.Merge && !(ix.sc.on(Guard) && ix.ch.clash(ra, rb, ix.sc.conflict)):
-			ix.ch.union(ra, rb)
-		case pr.Prob >= ix.cfg.Review:
-			review = append(review, pr)
-		}
+		review = place(ix.ch, ix.sc, pr, &ix.cfg, review)
 	}
 	return id, review
 }
