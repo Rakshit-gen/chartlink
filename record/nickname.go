@@ -32,6 +32,21 @@ var nicknames = map[string][]string{
 // stands for, so callers can make one up without reaching into the map.
 func Nicknames() map[string][]string { return nicknames }
 
+// Variants returns a cleaned first name with every name it could stand in
+// for: its formal names if it is a nickname, and its nicknames if it is a
+// formal name.
+func Variants(name string) []string {
+	out := append([]string{name}, nicknames[name]...)
+	for nick, formals := range nicknames {
+		for _, f := range formals {
+			if f == name {
+				out = append(out, nick)
+			}
+		}
+	}
+	return out
+}
+
 // SameGiven reports whether two cleaned first names could be the same
 // person's: equal, one a nickname of the other, or two nicknames of one
 // formal name (BOB and ROB).

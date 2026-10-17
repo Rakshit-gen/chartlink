@@ -20,3 +20,18 @@ func TestSameGiven(t *testing.T) {
 		}
 	}
 }
+
+func TestVariants(t *testing.T) {
+	got := map[string]bool{}
+	for _, v := range Variants("RICHARD") {
+		got[v] = true
+	}
+	for _, want := range []string{"RICHARD", "RICH", "RICK", "DICK"} {
+		if !got[want] {
+			t.Errorf("RICHARD's variants lack %s: %v", want, got)
+		}
+	}
+	if v := Variants("BOB"); len(v) != 2 || v[1] != "ROBERT" {
+		t.Errorf("BOB's variants: %v", v)
+	}
+}
