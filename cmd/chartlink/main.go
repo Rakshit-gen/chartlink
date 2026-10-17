@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/Rakshit-gen/chartlink/internal/svg"
 	"github.com/Rakshit-gen/chartlink/lab"
 	"github.com/Rakshit-gen/chartlink/match"
 	"github.com/Rakshit-gen/chartlink/score"
@@ -25,6 +26,7 @@ func usage() {
 commands:
   quality   exact matching, Fellegi-Sunter and chartlink on the same records
   ablate    chartlink with one idea switched off at a time
+  sweep     overlays against duplicates as the merge threshold moves
   all       everything above, written to -out
 `)
 	os.Exit(2)
@@ -44,12 +46,15 @@ func main() {
 		emit(*out, "quality.md", func(w io.Writer) { quality(w, cfg) })
 	case "ablate":
 		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
+	case "sweep":
+		sweep(*out, cfg)
 	case "all":
 		if *out == "" {
 			*out = "results"
 		}
 		emit(*out, "quality.md", func(w io.Writer) { quality(w, cfg) })
 		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
+		sweep(*out, cfg)
 	default:
 		usage()
 	}
@@ -209,4 +214,62 @@ func ablate(w io.Writer, cfg match.Config) {
 			mean(o, func(x lab.Outcome) float64 { return float64(x.Reviews) }),
 			mean(o, func(x lab.Outcome) float64 { return per1000(x.After.Duplicates, x.After.People) }))
 	}
+}
+
+// thresholds are the merge probabilities the sweep tries.
+var thresholds = []float64{0.5, 0.9, 0.99, 0.999, 0.9999, 0.99999}
+
+// sweep moves the merge threshold for Fellegi-Sunter and chartlink. One
+// threshold can flatter a matcher; the whole curve can't.
+func sweep(dir string, cfg match.Config) {
+	plain := cfg
+	plain.Without = lab.All
+	type curve struct {
+		name string
+		cfg  match.Config
+		x, y []float64
+	}
+	curves := []*curve{{name: "Fellegi-Sunter", cfg: plain}, {name: "chartlink", cfg: cfg}}
+	var cs []lab.Contender
+	for _, c := range curves {
+		for _, t := range thresholds {
+			k := c.cfg
+			k.Merge = t
+			k.Review = min(k.Review, t)
+			cs = append(cs, lab.Linker(fmt.Sprintf("%s at %g", c.name, t), k))
+		}
+	}
+	res := runAll(cs)
+	emit(dir, "sweep.md", func(w io.Writer) {
+		fmt.Fprintln(w, "## Moving the merge threshold")
+		fmt.Fprintln(w)
+		fmt.Fprintf(w, "Each matcher merges a pair when the model gives it at least this probability of being one person. Means over %d populations, before review.\n\n", populations)
+		fmt.Fprintln(w, "| matcher | merge at | overlays per 1000 | duplicates per 1000 |")
+		fmt.Fprintln(w, "|---|---:|---:|---:|")
+		for ci, c := range curves {
+			for ti, t := range thresholds {
+				o := res[ci*len(thresholds)+ti]
+				ov := mean(o, func(x lab.Outcome) float64 { return per1000(x.Before.Overlays, x.Before.People) })
+				du := mean(o, func(x lab.Outcome) float64 { return per1000(x.Before.Duplicates, x.Before.People) })
+				c.x, c.y = append(c.x, du), append(c.y, ov)
+				fmt.Fprintf(w, "| %s | %g | %.2f | %.1f |\n", c.name, t, ov, du)
+			}
+		}
+	})
+	ch := svg.Chart{
+		Title:  "Overlays against duplicates, merge threshold from 0.5 to 0.99999",
+		XLabel: "duplicate charts per 1000 people", YLabel: "overlays per 1000 people",
+		XMin: 0, XMax: 200, YMin: 0, YMax: 60,
+	}
+	for _, c := range curves {
+		ch.Series = append(ch.Series, svg.Series{Name: c.name, X: c.x, Y: c.y, Dots: true})
+	}
+	if dir == "" {
+		return
+	}
+	emit(dir, "sweep.svg", func(w io.Writer) {
+		if err := ch.Write(w); err != nil {
+			fatal(err)
+		}
+	})
 }
