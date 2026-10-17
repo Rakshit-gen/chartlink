@@ -24,6 +24,7 @@ func usage() {
 
 commands:
   quality   exact matching, Fellegi-Sunter and chartlink on the same records
+  ablate    chartlink with one idea switched off at a time
   all       everything above, written to -out
 `)
 	os.Exit(2)
@@ -41,11 +42,14 @@ func main() {
 	switch cmd {
 	case "quality":
 		emit(*out, "quality.md", func(w io.Writer) { quality(w, cfg) })
+	case "ablate":
+		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
 	case "all":
 		if *out == "" {
 			*out = "results"
 		}
 		emit(*out, "quality.md", func(w io.Writer) { quality(w, cfg) })
+		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
 	default:
 		usage()
 	}
@@ -186,3 +190,23 @@ func pooled(xs []lab.Outcome, f func(lab.Outcome) (int, int)) string {
 }
 
 func per1000(n, of int) float64 { return 1000 * float64(n) / float64(of) }
+
+func ablate(w io.Writer, cfg match.Config) {
+	cs := lab.Ablations(cfg)
+	res := runAll(cs)
+	fmt.Fprintln(w, "## Ablation")
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "chartlink with one idea switched off at a time, on the same %d populations as the quality table.\n\n", populations)
+	fmt.Fprintln(w, "| variant | overlays per 1000 | duplicates per 1000 | twin pairs merged | Jr/Sr pairs merged | review queue | duplicates per 1000 after review |")
+	fmt.Fprintln(w, "|---|---:|---:|---:|---:|---:|---:|")
+	for i, c := range cs {
+		o := res[i]
+		fmt.Fprintf(w, "| %s | %.2f | %.1f | %s | %s | %.0f | %.1f |\n", c.Name,
+			mean(o, func(x lab.Outcome) float64 { return per1000(x.Before.Overlays, x.Before.People) }),
+			mean(o, func(x lab.Outcome) float64 { return per1000(x.Before.Duplicates, x.Before.People) }),
+			pooled(o, func(x lab.Outcome) (int, int) { return x.Before.TwinsMerged, x.Before.TwinPairs }),
+			pooled(o, func(x lab.Outcome) (int, int) { return x.Before.JrSrMerged, x.Before.JrSrPairs }),
+			mean(o, func(x lab.Outcome) float64 { return float64(x.Reviews) }),
+			mean(o, func(x lab.Outcome) float64 { return per1000(x.After.Duplicates, x.After.People) }))
+	}
+}
