@@ -43,26 +43,41 @@ type Result struct {
 	Candidates int
 }
 
-// Link groups records into charts, one per person.
-func Link(recs []record.Record, cfg Config) Result {
+// Fit fits a model to a set of records without linking them, for an Index
+// to use on records that arrive later.
+func Fit(recs []record.Record, cfg Config) Model {
+	m, _, _ := fit(prepAll(recs), cfg)
+	return m
+}
+
+func prepAll(recs []record.Record) []prepped {
 	ps := make([]prepped, len(recs))
 	for i, r := range recs {
 		ps[i] = prep(r)
 	}
+	return ps
+}
+
+func fit(ps []prepped, cfg Config) (Model, []uint64, []Gamma) {
 	cands := candidates(ps)
 	gs := make([]Gamma, len(cands))
 	for i, c := range cands {
 		a, b := unpack(c)
 		gs[i] = compare(&ps[a], &ps[b])
 	}
-
 	var m Model
 	m.estimateU(ps, cfg.Samples, rand.New(rand.NewPCG(cfg.Seed, 1)))
 	share := m.estimateM(gs, cfg.Iters)
 	n := float64(len(ps))
 	m.Prior = share * float64(len(cands)) / (n * (n - 1) / 2)
-
 	m.countNames(ps)
+	return m, cands, gs
+}
+
+// Link groups records into charts, one per person.
+func Link(recs []record.Record, cfg Config) Result {
+	ps := prepAll(recs)
+	m, cands, gs := fit(ps, cfg)
 	sc := &scorer{ps: ps, m: &m, off: cfg.Without}
 	pairs := make([]Pair, len(cands))
 	for i, c := range cands {
