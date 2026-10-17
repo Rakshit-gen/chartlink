@@ -84,3 +84,22 @@ func parseDate(s string) (Date, error) {
 	}
 	return Date{Y: y, M: m, D: d}, nil
 }
+
+// WriteCSV writes records in the format ReadCSV reads, with each record's
+// ID in the id column.
+func WriteCSV(w io.Writer, recs []Record) error {
+	cw := csv.NewWriter(w)
+	cw.Write(columns)
+	for _, r := range recs {
+		dob, sex := "", ""
+		if r.DOB.Known() {
+			dob = fmt.Sprintf("%04d-%02d-%02d", r.DOB.Y, r.DOB.M, r.DOB.D)
+		}
+		if r.Sex != 0 {
+			sex = string(r.Sex)
+		}
+		cw.Write([]string{strconv.Itoa(r.ID), strconv.Itoa(r.Source), r.First, r.Middle, r.Last, r.Suffix, dob, sex, r.Phone, r.Street, r.Zip, r.SSN4})
+	}
+	cw.Flush()
+	return cw.Error()
+}

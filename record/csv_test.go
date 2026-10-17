@@ -1,6 +1,7 @@
 package record
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -31,6 +32,26 @@ func TestReadCSVRejects(t *testing.T) {
 	} {
 		if _, _, err := ReadCSV(strings.NewReader(in)); err == nil {
 			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestCSVRoundTrip(t *testing.T) {
+	want := []Record{
+		{ID: 0, Source: 2, First: "ANA", Middle: "M", Last: "DE LA CRUZ", Suffix: "JR", DOB: Date{1990, 1, 2}, Sex: 'F', Phone: "5551234567", Street: "1 MAIN ST, APT 2", Zip: "02139", SSN4: "0042"},
+		{ID: 1, First: "LEE", Last: "KIM"},
+	}
+	var b strings.Builder
+	if err := WriteCSV(&b, want); err != nil {
+		t.Fatal(err)
+	}
+	got, ids, err := ReadCSV(strings.NewReader(b.String()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range want {
+		if got[i] != want[i] || ids[i] != strconv.Itoa(i) {
+			t.Errorf("row %d: got %+v, want %+v", i, got[i], want[i])
 		}
 	}
 }
