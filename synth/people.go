@@ -165,12 +165,25 @@ func (g *gen) children(dadID int, last string, home Address) {
 	parentYear := g.out[dadID].DOB.Y
 	year := parentYear + 20 + g.r.IntN(15)
 	named := false
+	// Parents don't give two children the same first name, or a child a
+	// parent's name unless he's a junior.
+	used := map[string]bool{}
+	for i := dadID; i < len(g.out); i++ {
+		used[g.out[i].First] = true
+	}
+	fresh := func(p *Person) {
+		for used[p.First] {
+			p.First = given(g.r, p.Sex)
+		}
+		used[p.First] = true
+	}
 	for range 1 + g.r.IntN(3) {
 		if year > g.cfg.Today {
 			return
 		}
 		kid := g.person(randSex(g.r), last, year, home)
 		kidID := kid.ID
+		fresh(kid)
 		// A first son sometimes gets his father's full name.
 		if kid.Sex == 'M' && !named && g.r.Float64() < 0.1 {
 			named = true
@@ -187,9 +200,7 @@ func (g *gen) children(dadID int, last string, home Address) {
 			twin := g.person(randSex(g.r), last, year, home)
 			first := &g.out[kidID]
 			twin.DOB = first.DOB
-			for twin.First == first.First {
-				twin.First = given(g.r, twin.Sex)
-			}
+			fresh(twin)
 			twin.Kin, first.Kin = first.ID, twin.ID
 			twin.Tags |= Twin
 			first.Tags |= Twin
