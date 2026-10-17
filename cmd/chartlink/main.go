@@ -142,12 +142,7 @@ func quality(w io.Writer, cfg match.Config) {
 	for i, c := range cs {
 		o := res[i]
 		share := func(f func(score.Report) (int, int)) string {
-			a, b := 0, 0
-			for _, x := range o {
-				n, d := f(x.Before)
-				a, b = a+n, b+d
-			}
-			return fmt.Sprintf("%.1f%%", 100*float64(a)/float64(b))
+			return pooled(o, func(x lab.Outcome) (int, int) { return f(x.Before) })
 		}
 		fmt.Fprintf(w, "| %s | %s | %s | %s | %s | %s |\n", c.Name,
 			share(func(r score.Report) (int, int) { return r.TwinsMerged, r.TwinPairs }),
@@ -161,20 +156,33 @@ func quality(w io.Writer, cfg match.Config) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "A reviewer who is always right works through each matcher's review queue and merges the pairs of charts that are one person. That is the best case for the queue; a real reviewer is slower and sometimes wrong.")
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "| matcher | charts reviewed per 1000 records | of those, one person | overlays per 1000 after | duplicates per 1000 after |")
-	fmt.Fprintln(w, "|---|---:|---:|---:|---:|")
+	fmt.Fprintln(w, "| matcher | charts reviewed per 1000 records | of those, one person | overlays per 1000 after | duplicates per 1000 after | goes by middle name, split after |")
+	fmt.Fprintln(w, "|---|---:|---:|---:|---:|---:|")
 	for i, c := range cs {
 		o := res[i]
 		same := 0.0
 		if r := mean(o, func(x lab.Outcome) float64 { return float64(x.Reviews) }); r > 0 {
 			same = mean(o, func(x lab.Outcome) float64 { return float64(x.ReviewsSame) }) / r
 		}
-		fmt.Fprintf(w, "| %s | %.1f | %.0f%% | %.2f | %.1f |\n", c.Name,
+		fmt.Fprintf(w, "| %s | %.1f | %.0f%% | %.2f | %.1f | %s |\n", c.Name,
 			mean(o, func(x lab.Outcome) float64 { return per1000(x.Reviews, x.Before.Records) }),
 			100*same,
 			mean(o, func(x lab.Outcome) float64 { return per1000(x.After.Overlays, x.After.People) }),
-			mean(o, func(x lab.Outcome) float64 { return per1000(x.After.Duplicates, x.After.People) }))
+			mean(o, func(x lab.Outcome) float64 { return per1000(x.After.Duplicates, x.After.People) }),
+			pooled(o, func(x lab.Outcome) (int, int) { return x.After.ByMiddleSplit, x.After.ByMiddle }))
 	}
+}
+
+// pooled adds up a count and its total over every population and gives
+// the share, so a rare case isn't averaged over populations that have
+// three of them.
+func pooled(xs []lab.Outcome, f func(lab.Outcome) (int, int)) string {
+	a, b := 0, 0
+	for _, x := range xs {
+		n, d := f(x)
+		a, b = a+n, b+d
+	}
+	return fmt.Sprintf("%.1f%%", 100*float64(a)/float64(b))
 }
 
 func per1000(n, of int) float64 { return 1000 * float64(n) / float64(of) }
