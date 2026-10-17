@@ -27,6 +27,7 @@ commands:
   quality   exact matching, Fellegi-Sunter and chartlink on the same records
   ablate    chartlink with one idea switched off at a time
   sweep     overlays against duplicates as the merge threshold moves
+  blocking  how many true pairs the blocking passes ever propose
   all       everything above, written to -out
 `)
 	os.Exit(2)
@@ -48,6 +49,8 @@ func main() {
 		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
 	case "sweep":
 		sweep(*out, cfg)
+	case "blocking":
+		emit(*out, "blocking.md", blocking)
 	case "all":
 		if *out == "" {
 			*out = "results"
@@ -55,6 +58,7 @@ func main() {
 		emit(*out, "quality.md", func(w io.Writer) { quality(w, cfg) })
 		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
 		sweep(*out, cfg)
+		emit(*out, "blocking.md", blocking)
 	default:
 		usage()
 	}
@@ -272,4 +276,21 @@ func sweep(dir string, cfg match.Config) {
 			fatal(err)
 		}
 	})
+}
+
+func blocking(w io.Writer) {
+	d := lab.Data(1)
+	stats, recall := match.BlockingStats(d.Records, d.Truth)
+	n := float64(len(d.Records))
+	fmt.Fprintln(w, "## Blocking")
+	fmt.Fprintln(w)
+	fmt.Fprintf(w, "Comparing every pair of %d records would be %.0f million comparisons. Blocking compares only records that share a key in at least one pass. A true pair that no pass proposes can never be linked, so this is a ceiling on recall. First population only.\n\n", len(d.Records), n*(n-1)/2/1e6)
+	fmt.Fprintln(w, "| pass | candidate pairs | true pairs found | found by no other pass |")
+	fmt.Fprintln(w, "|---|---:|---:|---:|")
+	total := 0
+	for _, s := range stats {
+		total += s.Pairs
+		fmt.Fprintf(w, "| %s | %d | %d | %d |\n", s.Name, s.Pairs, s.Found, s.Only)
+	}
+	fmt.Fprintf(w, "\nTrue pairs found by at least one pass: %.2f%%. Candidate pairs across passes, before removing repeats: %d, about %.1f per record.\n", 100*recall, total, float64(total)/n)
 }
