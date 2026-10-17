@@ -87,7 +87,7 @@ func Link(recs []record.Record, cfg Config) Result {
 			continue
 		}
 		switch {
-		case p.Prob >= cfg.Merge:
+		case p.Prob >= cfg.Merge && !(sc.on(Guard) && ch.clash(ra, rb, sc.conflict)):
 			ch.union(ra, rb)
 		case p.Prob >= cfg.Review:
 			res.Review = append(res.Review, p)

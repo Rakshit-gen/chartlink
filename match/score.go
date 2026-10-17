@@ -20,6 +20,9 @@ const (
 	// Family drops the evidence relatives share when a pair looks like
 	// twins or a father and son.
 	Family
+	// Guard vetoes joining two charts when any pair of records across them
+	// conflicts outright, not just the pair that triggered the merge.
+	Guard
 )
 
 // scorer weighs pairs with the fitted model and whichever ideas are on.
@@ -150,3 +153,10 @@ func generations(a, b *prepped, g Gamma) bool {
 	return max(gap, -gap) >= generationGap
 }
 
+// conflict reports whether a pair can't be one person: twins, a father and
+// son, or two different SSNs that aren't one keying mistake apart.
+func (s *scorer) conflict(a, b int) bool {
+	pa, pb := &s.ps[a], &s.ps[b]
+	g := compare(pa, pb)
+	return g[SSN] == 2 || twins(pa, pb, g) || generations(pa, pb, g)
+}

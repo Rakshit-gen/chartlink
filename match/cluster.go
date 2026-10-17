@@ -43,3 +43,17 @@ func (c *charts) labels() []int {
 	}
 	return out
 }
+
+// clash reports whether any record in chart a conflicts with any record in
+// chart b. A chart grows one pair at a time, so without this, A links to
+// B and B links to C can put A and C in one chart though they are twins.
+func (c *charts) clash(a, b int, conflict func(x, y int) bool) bool {
+	for _, x := range c.members[a] {
+		for _, y := range c.members[b] {
+			if conflict(int(x), int(y)) {
+				return true
+			}
+		}
+	}
+	return false
+}
