@@ -17,11 +17,8 @@ const (
 	// in a household shares them, so they are one piece of evidence, not
 	// three.
 	Household
-	// Family drops the evidence relatives share when a pair looks like
-	// twins or a father and son.
-	Family
 	// Guard vetoes joining two charts when any pair of records across them
-	// conflicts outright, not just the pair that triggered the merge.
+	// conflicts outright: twins, a father and son, two different SSNs.
 	Guard
 )
 
@@ -44,16 +41,14 @@ func (s *scorer) on(i Idea) bool { return s.off&i == 0 }
 var household = [3]Field{Street, Zip, Phone}
 
 // weight is the pair's evidence in bits: positive for the same person.
-// raw is the same before the family rules, so a caller can tell when the
-// rules are what kept a pair apart.
-func (s *scorer) weight(a, b int, g Gamma) (w, raw float64) {
+func (s *scorer) weight(a int, g Gamma) float64 {
 	var c [Fields]float64
 	for f := range Fields {
 		if l := g[f]; l != Missing {
 			c[f] = math.Log2(s.m.M[f][l] / s.m.U[f][l])
 		}
 	}
-	pa, pb := &s.ps[a], &s.ps[b]
+	pa := &s.ps[a]
 	if s.on(TermFreq) {
 		// Exact agreement on a name is worth log2(M/f), where f is the
 		// share of records with that name, rather than log2(M/U) with U
@@ -81,29 +76,11 @@ func (s *scorer) weight(a, b int, g Gamma) (w, raw float64) {
 			}
 		}
 	}
-	for _, x := range c {
-		raw += x
-	}
-	if s.on(Family) {
-		var shared []Field
-		switch {
-		case twins(pa, pb, g):
-			// Twins share a last name, a birthday and a home. With the
-			// first names different, those agreeing is what twins look
-			// like, not evidence of one person.
-			shared = []Field{Last, DOB, Street, Zip, Phone}
-		case generations(pa, pb, g):
-			// A father and son share every name and a home.
-			shared = []Field{First, Middle, Last, Suffix, Street, Zip, Phone}
-		}
-		for _, f := range shared {
-			c[f] = min(c[f], 0)
-		}
-	}
+	w := 0.0
 	for _, x := range c {
 		w += x
 	}
-	return w, raw
+	return w
 }
 
 // twins: the same date of birth, or one a typo away, and first names more

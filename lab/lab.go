@@ -16,7 +16,7 @@ type Contender struct {
 }
 
 // All switches every idea off: plain Fellegi-Sunter with EM.
-const All = match.TermFreq | match.Household | match.Family | match.Guard
+const All = match.TermFreq | match.Household | match.Guard
 
 // Linker is chartlink with some ideas switched off.
 func Linker(name string, cfg match.Config) Contender {
@@ -46,8 +46,7 @@ func Ablations(cfg match.Config) []Contender {
 	}{
 		{"names not weighted by rarity", match.TermFreq},
 		{"household fields counted separately", match.Household},
-		{"no twin or father-son rules", match.Family},
-		{"no chart guard", match.Guard},
+		{"no chart guard (twin, Jr/Sr and SSN conflicts)", match.Guard},
 	} {
 		c := cfg
 		c.Without = a.off

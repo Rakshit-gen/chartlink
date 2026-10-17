@@ -58,7 +58,7 @@ func (ix *Index) Add(r record.Record) (id int, review []Pair) {
 				continue
 			}
 			ix.seen[o] = true
-			ix.pairs = append(ix.pairs, ix.sc.pair(o, id, compare(&ix.sc.ps[o], p), &ix.cfg))
+			ix.pairs = append(ix.pairs, ix.sc.pair(o, id, compare(&ix.sc.ps[o], p)))
 		}
 	}
 	for i, k := range keys {
