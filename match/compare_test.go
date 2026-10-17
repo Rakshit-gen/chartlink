@@ -54,3 +54,14 @@ func TestSSN(t *testing.T) {
 		}
 	}
 }
+
+func TestFirstIsOtherMiddle(t *testing.T) {
+	a := prep(record.Record{First: "James", Middle: "Robert", Last: "Smith"})
+	b := prep(record.Record{First: "Robert", Last: "Smith"})
+	if g := compare(&a, &b); g[First] != 1 {
+		t.Errorf("first level %s", LevelName(First, int(g[First])))
+	}
+	if g := compare(&b, &a); g[First] != 1 {
+		t.Errorf("reversed: first level %s", LevelName(First, int(g[First])))
+	}
+}

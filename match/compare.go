@@ -30,7 +30,7 @@ const Missing = -1
 // Level names for each field, in order from strongest agreement to
 // disagreement. A pair gets one level per field.
 var levelNames = [Fields][]string{
-	First:  {"exact", "nickname", "close", "differ"},
+	First:  {"exact", "nickname or middle name", "close", "differ"},
 	Last:   {"exact", "close", "differ"},
 	DOB:    {"exact", "month and day swapped", "one part off", "differ"},
 	Sex:    {"agree", "differ"},
@@ -59,6 +59,9 @@ type Gamma [Fields]int8
 func compare(a, b *prepped) Gamma {
 	var g Gamma
 	g[First] = names(a.first, b.first, true)
+	if g[First] > 1 && a.first != "" && (a.first == b.middleName || b.first == a.middleName) {
+		g[First] = 1 // JAMES ROBERT SMITH registered as ROBERT SMITH
+	}
 	g[Last] = names(a.last, b.last, false)
 	g[DOB] = dates(a.dob, b.dob)
 	g[Sex] = same(a.sex != 0 && b.sex != 0, a.sex == b.sex)

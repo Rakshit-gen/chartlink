@@ -13,7 +13,7 @@ func TestPrep(t *testing.T) {
 		Street: "12 Oak Street, Apt. 4", Zip: "02139-1234", SSN4: "12",
 	})
 	want := prepped{
-		first: "MARYANN", middle: "L", last: "ONEIL", suffix: "JR",
+		first: "MARYANN", middle: "L", middleName: "LOUISE", last: "ONEIL", suffix: "JR",
 		phone: "5552013344", street: "12 OAK ST APT 4", house: "12", zip: "02139",
 		firstSx: "M650", lastSx: "O540",
 	}

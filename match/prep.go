@@ -11,6 +11,7 @@ import (
 // does no string work beyond the comparisons themselves.
 type prepped struct {
 	first, middle, last, suffix string
+	middleName                  string // the full middle name, when given
 	firstSx, lastSx             string // Soundex codes
 	dob                         record.Date
 	sex                         byte
@@ -32,7 +33,10 @@ func prep(r record.Record) prepped {
 		phone: record.Digits(r.Phone), zip: record.Digits(r.Zip), ssn4: record.Digits(r.SSN4),
 	}
 	if len(p.middle) > 1 {
-		p.middle = p.middle[:1] // sources disagree on full middle names vs initials
+		// Sources disagree on full middle names vs initials, so compare
+		// initials; keep the full name to spot someone who goes by it.
+		p.middleName = p.middle
+		p.middle = p.middle[:1]
 	}
 	if !p.dob.Known() || placeholderDOB[p.dob] {
 		p.dob = record.Date{}
