@@ -26,11 +26,12 @@ type Report struct {
 
 	// Hard cases. Twins and Jr/Sr are pairs that must stay apart; married
 	// and moved are people whose records must come together.
-	TwinsMerged, TwinPairs int
-	JrSrMerged, JrSrPairs  int
-	MarriedSplit, Married  int
-	MovedSplit, Moved      int
-	Charts                 int
+	TwinsMerged, TwinPairs  int
+	JrSrMerged, JrSrPairs   int
+	MarriedSplit, Married   int
+	MovedSplit, Moved       int
+	ByMiddleSplit, ByMiddle int
+	Charts                  int
 }
 
 func pairs(n int) float64 { return float64(n) * float64(n-1) / 2 }
@@ -119,6 +120,12 @@ func Score(d synth.Data, cluster []int) Report {
 			rep.Married++
 			if split {
 				rep.MarriedSplit++
+			}
+		}
+		if p.Has(synth.ByMiddle) {
+			rep.ByMiddle++
+			if split {
+				rep.ByMiddleSplit++
 			}
 		}
 		if p.Has(synth.Moved) {

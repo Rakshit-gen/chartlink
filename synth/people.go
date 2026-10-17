@@ -14,10 +14,11 @@ import (
 type Tag uint8
 
 const (
-	Twin    Tag = 1 << iota // has a twin: same last name, birthday and address
-	JrSr                    // father and son with the same name and address
-	Married                 // changed last name; older records have the old one
-	Moved                   // changed address; older records have the old one
+	Twin     Tag = 1 << iota // has a twin: same last name, birthday and address
+	JrSr                     // father and son with the same name and address
+	Married                  // changed last name; older records have the old one
+	Moved                    // changed address; older records have the old one
+	ByMiddle                 // goes by the middle name; some records have it as the first
 )
 
 // Address is where a household lives and its landline, if it has one.
@@ -114,6 +115,9 @@ func (g *gen) person(sex byte, last string, year int, home Address) *Person {
 	}
 	if g.r.Float64() < 0.7 {
 		p.Middle = given(g.r, sex)
+		if p.Middle != p.First && g.r.Float64() < 0.04 {
+			p.Tags |= ByMiddle
+		}
 	}
 	if g.cfg.Today-year >= 14 {
 		p.Mobile = g.phone()

@@ -19,7 +19,7 @@ func TestPeopleHardCases(t *testing.T) {
 		if p.ID != i {
 			t.Fatalf("person %d has ID %d", i, p.ID)
 		}
-		for _, tag := range []Tag{Twin, JrSr, Married, Moved} {
+		for _, tag := range []Tag{Twin, JrSr, Married, Moved, ByMiddle} {
 			if p.Has(tag) {
 				count[tag]++
 			}
@@ -41,8 +41,8 @@ func TestPeopleHardCases(t *testing.T) {
 			t.Errorf("married %d: %+v", p.ID, p)
 		}
 	}
-	t.Logf("%d people: %d twins, %d Jr/Sr, %d married, %d moved", len(ps), count[Twin], count[JrSr], count[Married], count[Moved])
-	for _, tag := range []Tag{Twin, JrSr, Married, Moved} {
+	t.Logf("%d people: %d twins, %d Jr/Sr, %d married, %d moved, %d by middle name", len(ps), count[Twin], count[JrSr], count[Married], count[Moved], count[ByMiddle])
+	for _, tag := range []Tag{Twin, JrSr, Married, Moved, ByMiddle} {
 		if count[tag] < 50 {
 			t.Errorf("only %d people with tag %d", count[tag], tag)
 		}

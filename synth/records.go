@@ -85,6 +85,11 @@ func render(r *rand.Rand, p *Person, s *Source) record.Record {
 		rec.Phone = addr.Phone
 	}
 
+	if p.Has(ByMiddle) && r.Float64() < 0.5 {
+		// Registered under the name the patient gave: ROBERT for JAMES
+		// ROBERT SMITH.
+		rec.First, rec.Middle = p.Middle, ""
+	}
 	if r.Float64() < s.Nickname {
 		rec.First = nickname(r, rec.First)
 	}
