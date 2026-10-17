@@ -1,0 +1,4 @@
+/chartlink
+*.test
+*.prof
+results/.log
