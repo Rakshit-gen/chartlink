@@ -28,6 +28,7 @@ commands:
   ablate    chartlink with one idea switched off at a time
   sweep     overlays against duplicates as the merge threshold moves
   blocking  how many true pairs the blocking passes ever propose
+  bench     what linking one record costs, at three sizes
   all       everything above, written to -out
 `)
 	os.Exit(2)
@@ -51,6 +52,8 @@ func main() {
 		sweep(*out, cfg)
 	case "blocking":
 		emit(*out, "blocking.md", blocking)
+	case "bench":
+		emit(*out, "bench.md", func(w io.Writer) { bench(w, cfg) })
 	case "all":
 		if *out == "" {
 			*out = "results"
@@ -59,6 +62,7 @@ func main() {
 		emit(*out, "ablation.md", func(w io.Writer) { ablate(w, cfg) })
 		sweep(*out, cfg)
 		emit(*out, "blocking.md", blocking)
+		emit(*out, "bench.md", func(w io.Writer) { bench(w, cfg) })
 	default:
 		usage()
 	}
