@@ -30,25 +30,13 @@ type scorer struct {
 	ps  []prepped
 	m   *Model
 	off Idea
-	tf  [2]map[string]float64 // share of records with each first, last name
 }
 
-func newScorer(ps []prepped, m *Model, off Idea) *scorer {
-	s := &scorer{ps: ps, m: m, off: off}
-	for i := range s.tf {
-		s.tf[i] = map[string]float64{}
+func (s *scorer) share(f Field, name string) float64 {
+	if x, ok := s.m.Names[f][name]; ok {
+		return x
 	}
-	for i := range ps {
-		s.tf[0][ps[i].first]++
-		s.tf[1][ps[i].last]++
-	}
-	n := float64(len(ps))
-	for i := range s.tf {
-		for k, c := range s.tf[i] {
-			s.tf[i][k] = c / n
-		}
-	}
-	return s
+	return s.m.NameFloor
 }
 
 func (s *scorer) on(i Idea) bool { return s.off&i == 0 }
@@ -70,10 +58,10 @@ func (s *scorer) weight(a, b int, g Gamma) float64 {
 		// averaged over all names. SMITH agreeing is weak; KOVALENKO is
 		// strong.
 		if g[First] == 0 {
-			c[First] = math.Log2(s.m.M[First][0] / s.tf[0][pa.first])
+			c[First] = math.Log2(s.m.M[First][0] / s.share(First, pa.first))
 		}
 		if g[Last] == 0 {
-			c[Last] = math.Log2(s.m.M[Last][0] / s.tf[1][pa.last])
+			c[Last] = math.Log2(s.m.M[Last][0] / s.share(Last, pa.last))
 		}
 	}
 	if s.on(Household) {

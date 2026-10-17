@@ -14,6 +14,27 @@ type Model struct {
 	M, U [Fields][]float64
 	// Prior is the chance that two random records are the same person.
 	Prior float64
+	// Names holds, for first and last names, the share of records with
+	// each name. A name not in the table is taken to be as rare as one
+	// record in the set the model was fitted on (NameFloor).
+	Names     map[Field]map[string]float64
+	NameFloor float64
+}
+
+// countNames fills Names from the records the model is fitted on.
+func (m *Model) countNames(ps []prepped) {
+	m.Names = map[Field]map[string]float64{First: {}, Last: {}}
+	for i := range ps {
+		m.Names[First][ps[i].first]++
+		m.Names[Last][ps[i].last]++
+	}
+	n := float64(len(ps))
+	for _, t := range m.Names {
+		for k, c := range t {
+			t[k] = c / n
+		}
+	}
+	m.NameFloor = 1 / n
 }
 
 // Weight is the pair's log2 Bayes factor. Missing fields add nothing.

@@ -62,7 +62,8 @@ func Link(recs []record.Record, cfg Config) Result {
 	n := float64(len(ps))
 	m.Prior = share * float64(len(cands)) / (n * (n - 1) / 2)
 
-	sc := newScorer(ps, &m, cfg.Without)
+	m.countNames(ps)
+	sc := &scorer{ps: ps, m: &m, off: cfg.Without}
 	pairs := make([]Pair, len(cands))
 	for i, c := range cands {
 		a, b := unpack(c)
