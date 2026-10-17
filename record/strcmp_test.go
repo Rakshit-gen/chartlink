@@ -53,3 +53,21 @@ func TestSoundex(t *testing.T) {
 		}
 	}
 }
+
+func TestOSA(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want int
+	}{
+		{"RYAN", "RYSN", 1}, {"AMY", "MY", 1}, {"GARCIA", "GRACIA", 1}, {"CA", "AC", 1},
+		{"ANNA", "ANA", 1}, {"MARK", "MARK", 0}, {"", "ABC", 3}, {"JOHN", "MARY", 4},
+		{"KITTEN", "SITTING", 3},
+	} {
+		if got := OSA(c.a, c.b); got != c.want {
+			t.Errorf("OSA(%s, %s) = %d, want %d", c.a, c.b, got, c.want)
+		}
+		if got := OSA(c.b, c.a); got != c.want {
+			t.Errorf("OSA(%s, %s) = %d, want %d", c.b, c.a, got, c.want)
+		}
+	}
+}

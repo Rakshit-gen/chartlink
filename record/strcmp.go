@@ -94,3 +94,31 @@ func Soundex(s string) string {
 	}
 	return string(out)
 }
+
+// OSA is the optimal string alignment distance: the number of insertions,
+// deletions, substitutions and swaps of neighbouring letters to turn a
+// into b, each letter edited at most once. One keying mistake is distance 1.
+func OSA(a, b string) int {
+	la, lb := len(a), len(b)
+	prev2 := make([]int, lb+1)
+	prev := make([]int, lb+1)
+	cur := make([]int, lb+1)
+	for j := range lb + 1 {
+		prev[j] = j
+	}
+	for i := 1; i <= la; i++ {
+		cur[0] = i
+		for j := 1; j <= lb; j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+			if i > 1 && j > 1 && a[i-1] == b[j-2] && a[i-2] == b[j-1] {
+				cur[j] = min(cur[j], prev2[j-2]+1)
+			}
+		}
+		prev2, prev, cur = prev, cur, prev2
+	}
+	return prev[lb]
+}
