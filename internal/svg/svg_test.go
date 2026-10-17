@@ -63,3 +63,17 @@ func TestFractionalAxisLabels(t *testing.T) {
 		}
 	}
 }
+
+func TestDots(t *testing.T) {
+	c := Chart{XMin: 0, XMax: 10, YMin: 0, YMax: 10, Series: []Series{
+		{Name: "a", X: []float64{1, 2, 20}, Y: []float64{1, 2, 3}, Dots: true},
+		{Name: "b", X: []float64{1}, Y: []float64{1}},
+	}}
+	var b strings.Builder
+	if err := c.Write(&b); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(b.String(), "<circle"); n != 2 {
+		t.Errorf("%d dots, want 2 (the third point is off the chart)", n)
+	}
+}

@@ -15,6 +15,7 @@ type Series struct {
 	Name string
 	X, Y []float64 // NaN in Y leaves a gap
 	Dash bool
+	Dots bool // mark each point, for curves where the points are settings
 }
 
 // Mark is a labelled vertical line, for events.
@@ -107,6 +108,12 @@ func (c *Chart) Write(w io.Writer) error {
 			pen = true
 		}
 		fmt.Fprintf(&b, `<path d="%s" fill="none" stroke="%s" stroke-width="2"%s/>`+"\n", strings.TrimSpace(path.String()), col, dash)
+		for j := range s.X {
+			if !s.Dots || math.IsNaN(s.Y[j]) || s.X[j] < c.XMin || s.X[j] > c.XMax || s.Y[j] < c.YMin || s.Y[j] > c.YMax {
+				continue
+			}
+			fmt.Fprintf(&b, `<circle cx="%.1f" cy="%.1f" r="3.5" fill="%s"/>`+"\n", sx(s.X[j]), sy(s.Y[j]), col)
+		}
 		ly := top + 8 + 20*i
 		fmt.Fprintf(&b, `<line x1="%d" x2="%d" y1="%d" y2="%d" stroke="%s" stroke-width="2"%s/>`+"\n", width-right+14, width-right+36, ly, ly, col, dash)
 		fmt.Fprintf(&b, `<text x="%d" y="%d" fill="#333">%s</text>`+"\n", width-right+42, ly+4, esc(s.Name))
