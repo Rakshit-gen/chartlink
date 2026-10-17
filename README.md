@@ -37,7 +37,7 @@ Five synthetic populations of 20,000 people, about 43,000 records each, from fiv
 | Fellegi-Sunter with EM | 29.27 | 28.3 | 0.9119 | 0.9766 | 957 |
 | **chartlink** | **0.22** | 34.7 | 0.9997 | 0.9660 | 1041 |
 
-chartlink leaves a few more charts split than Fellegi-Sunter (34.7 against 28.3 per 1000) in exchange for 130 times fewer overlays. A reviewer who is always right, working through each matcher's queue, brings chartlink to 7.1 duplicates per 1000 and Fellegi-Sunter to 7.9. The overlays don't change, since the reviewer only merges.
+chartlink leaves a few more charts split than Fellegi-Sunter (34.7 against 28.3 per 1000) in exchange for 130 times fewer overlays. A reviewer who is always right, working through each matcher's queue, brings chartlink to 7.1 duplicates per 1000 and Fellegi-Sunter to 7.9. Overlays barely move, since the reviewer only merges.
 
 The hard cases:
 
@@ -49,7 +49,7 @@ The hard cases:
 
 People who go by their middle name are the cost of the guard: they look like twins, so 33% of them are split before review and 1.9% after.
 
-One threshold can flatter a matcher, so here is the whole range. Each point is a merge threshold from 0.5 to 0.99999. At every setting, chartlink makes fewer overlays at fewer or about the same duplicates.
+One threshold can flatter a matcher, so here is the whole range. Each point is a merge threshold from 0.5 to 0.99999. chartlink's curve sits below Fellegi-Sunter's wherever both have points: for any number of split charts you accept, it overlays far fewer people. Fellegi-Sunter can get down to 7 duplicates per 1000 at a 0.5 threshold, which chartlink can't (17 at best), but only by overlaying 56 people per 1000.
 
 ![Overlays against duplicates as the threshold moves](results/sweep.svg)
 
