@@ -42,3 +42,20 @@ func TestCandidates(t *testing.T) {
 		t.Errorf("got %d pairs: %v", len(got), got)
 	}
 }
+
+func TestBlockingStats(t *testing.T) {
+	d := record.Date{Y: 1980, M: 4, D: 2}
+	recs := []record.Record{
+		{First: "ANNA", Last: "SMITH", DOB: d},
+		{First: "ANNA", Last: "SMYTH", DOB: d},
+		{First: "ANNA", Last: "JONES"}, // same person, nothing to block on
+	}
+	stats, recall := BlockingStats(recs, []int{0, 0, 0})
+	if recall != 1.0/3 {
+		t.Errorf("recall %v, want 1/3", recall)
+	}
+	// The first two passes both find 0-1, so neither finds it alone.
+	if stats[0].Found != 1 || stats[1].Found != 1 || stats[0].Only != 0 {
+		t.Errorf("%+v", stats)
+	}
+}
