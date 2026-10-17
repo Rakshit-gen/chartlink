@@ -57,3 +57,10 @@ func (c *charts) clash(a, b int, conflict func(x, y int) bool) bool {
 	}
 	return false
 }
+
+// add makes a one-record chart for a new record.
+func (c *charts) add() {
+	n := int32(len(c.parent))
+	c.parent = append(c.parent, n)
+	c.members = append(c.members, []int32{n})
+}
