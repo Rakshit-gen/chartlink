@@ -22,6 +22,8 @@ const populations = 5
 
 func usage() {
 	fmt.Fprint(os.Stderr, `usage: chartlink <command> [-out dir]
+       chartlink link [-merge p] [-review file] < records.csv > charts.csv
+       chartlink export [-people n] [-seed n] > records.csv
 
 commands:
   quality   exact matching, Fellegi-Sunter and chartlink on the same records
@@ -30,6 +32,8 @@ commands:
   blocking  how many true pairs the blocking passes ever propose
   bench     what linking one record costs, at three sizes
   all       everything above, written to -out
+  link      link a CSV of records into charts
+  export    write a synthetic population's records as CSV
 `)
 	os.Exit(2)
 }
@@ -39,6 +43,14 @@ func main() {
 		usage()
 	}
 	cmd := os.Args[1]
+	switch cmd {
+	case "link":
+		linkCmd(os.Args[2:])
+		return
+	case "export":
+		exportCmd(os.Args[2:])
+		return
+	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
 	out := fs.String("out", "", "directory to write markdown and charts to (default: print markdown)")
 	fs.Parse(os.Args[2:])
