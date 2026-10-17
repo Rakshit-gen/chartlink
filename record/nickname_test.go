@@ -31,7 +31,11 @@ func TestVariants(t *testing.T) {
 			t.Errorf("RICHARD's variants lack %s: %v", want, got)
 		}
 	}
-	if v := Variants("BOB"); len(v) != 2 || v[1] != "ROBERT" {
-		t.Errorf("BOB's variants: %v", v)
+	got = map[string]bool{}
+	for _, v := range Variants("JIMMY") {
+		got[v] = true
+	}
+	if !got["JAMES"] || !got["JIM"] || got["BOB"] {
+		t.Errorf("JIMMY's variants: %v", got)
 	}
 }

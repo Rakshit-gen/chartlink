@@ -1,5 +1,7 @@
 package record
 
+import "slices"
+
 // nicknames maps a nickname to the formal names it is short for. Front desks
 // register whatever the patient says, so BOB at one clinic is ROBERT at
 // another. Kept to common US names; a hospital would load its own list.
@@ -33,13 +35,14 @@ var nicknames = map[string][]string{
 func Nicknames() map[string][]string { return nicknames }
 
 // Variants returns a cleaned first name with every name it could stand in
-// for: its formal names if it is a nickname, and its nicknames if it is a
-// formal name.
+// for: its formal names if it is a nickname, every nickname of those, and
+// its own nicknames if it is a formal name. JIMMY gives JAMES and JIM.
 func Variants(name string) []string {
-	out := append([]string{name}, nicknames[name]...)
-	for nick, formals := range nicknames {
-		for _, f := range formals {
-			if f == name {
+	formal := append([]string{name}, nicknames[name]...)
+	out := slices.Clone(formal)
+	for nick, fs := range nicknames {
+		for _, f := range fs {
+			if slices.Contains(formal, f) && !slices.Contains(out, nick) {
 				out = append(out, nick)
 			}
 		}
